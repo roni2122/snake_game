@@ -1,0 +1,208 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'dart:math';
+
+void main() {
+  runApp(SnakeGame());
+}
+
+class SnakeGame extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Snake Game',
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Snake Game'),
+        ),
+        body: SnakeBody(),
+      ),
+    );
+  }
+}
+
+class SnakeBody extends StatefulWidget {
+  @override
+  _SnakeBodyState createState() => _SnakeBodyState();
+}
+
+class _SnakeBodyState extends State<SnakeBody> {
+  final int rows = 20;
+  final int cols = 20;
+  final int speed = 300;
+  final int squareSize = 20;
+  List<int> snakePosition = [45, 44, 43];
+  int food;
+  var random = Random();
+  var direction = 'down';
+  bool gameOver = false;
+
+  @override
+  void initState() {
+    super.initState();
+    getFood();
+    Timer.periodic(Duration(milliseconds: speed), (Timer timer) {
+      setState(() {
+        if (!gameOver) {
+          moveSnake();
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  void getFood() {
+    food = random.nextInt(rows * cols);
+  }
+
+  void moveSnake() {
+    switch (direction) {
+      case 'up':
+        if (!isSnakeHere(snakePosition.first - cols)) {
+          if (snakePosition.first - cols < 0) {
+            gameOver = true;
+          } else {
+            snakePosition.insert(0, snakePosition.first - cols);
+            if (snakePosition.first == food) {
+              getFood();
+            } else {
+              snakePosition.removeLast();
+            }
+          }
+        } else {
+          gameOver = true;
+        }
+        break;
+
+      case 'down':
+        if (!isSnakeHere(snakePosition.first + cols)) {
+          if (snakePosition.first + cols >= rows * cols) {
+            gameOver = true;
+          } else {
+            snakePosition.insert(0, snakePosition.first + cols);
+            if (snakePosition.first == food) {
+              getFood();
+            } else {
+              snakePosition.removeLast();
+            }
+          }
+        } else {
+          gameOver = true;
+        }
+        break;
+
+      case 'left':
+        if (!isSnakeHere(snakePosition.first - 1)) {
+          if (snakePosition.first % cols == 0) {
+            gameOver = true;
+          } else {
+            snakePosition.insert(0, snakePosition.first - 1);
+            if (snakePosition.first == food) {
+              getFood();
+            } else {
+              snakePosition.removeLast();
+            }
+          }
+        } else {
+          gameOver = true;
+        }
+        break;
+
+      case 'right':
+        if (!isSnakeHere(snakePosition.first + 1)) {
+          if ((snakePosition.first + 1) % cols == 0) {
+            gameOver = true;
+          } else {
+            snakePosition.insert(0, snakePosition.first + 1);
+            if (snakePosition.first == food) {
+              getFood();
+            } else {
+              snakePosition.removeLast();
+            }
+          }
+        } else {
+          gameOver = true;
+        }
+        break;
+    }
+  }
+
+  bool isSnakeHere(int position) {
+    return snakePosition.any((element) => element == position);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        if (direction != 'up' && details.delta.dy > 0) {
+          direction = 'down';
+        } else if (direction != 'down' && details.delta.dy < 0) {
+          direction = 'up';
+        }
+      },
+      onHorizontalDragUpdate: (details) {
+        if (direction != 'left' && details.delta.dx > 0) {
+          direction = 'right';
+        } else if (direction != 'right' && details.delta.dx < 0) {
+          direction = 'left';
+        }
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: GridView.builder(
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: rows * cols,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+              ),
+              itemBuilder: (BuildContext context, int index) {
+                var color;
+                if (snakePosition.first == index) {
+                  color = Colors.green;
+                } else if (snakePosition.contains(index)) {
+                  color = Colors.green[200];
+                } else if (food == index) {
+                  color = Colors.red;
+                } else {
+                  color = Colors.grey[800];
+                }
+                return Container(
+                  padding: EdgeInsets.all(2),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: Container(
+                      color: color,
+                      child: Center(
+                        child: Text(
+                          '',
+                          style: TextStyle(fontSize: squareSize * 0.8),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(20),
+            child: Center(
+              child: gameOver
+                  ? Text(
+                      'Game Over',
+                      style: TextStyle(fontSize: 30),
+                    )
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
